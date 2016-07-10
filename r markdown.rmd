@@ -1,0 +1,69 @@
+Reproducible Research - Week 2 Assignment
+============================
+            
+###1 -> What is mean total number of steps taken per day?                                            
+####Loading the data and calculating the number of steps per day
+```{r, echo = TRUE}
+activity <- read.csv("C:/Users/Vaibhav-PC/Documents/R/Course 5/Week 2/activity.csv")
+activity$date <- as.Date(activity$date,format= "%Y-%m-%d")
+activity$day <- weekdays(activity$date) 
+date_group <- factor(activity$date)
+stepday <- tapply(activity$steps, date_group, sum, na.rm= TRUE)
+stepday <- as.data.frame(stepday)
+colnames(stepday) <- "days"
+head(stepday)
+```
+
+####Histogram depciting number of steps taken per day
+ 
+```{r warning=FALSE, messages= FALSE, fig.height=4, fig.width=10}
+library(ggplot2)
+hist(stepday$days,breaks=20, main="Histogram depicting number of steps taken per day", xlab="Number of steps taken", ylab="Count of steps")
+mline <- mean(stepday$days,na.rm=TRUE)
+medianline <- median(stepday$days,na.rm=TRUE)
+```
+####The Mean is `r mline` and Median is `r I(medianline)`
+
+
+###2 -> What is the average daily activity pattern?
+
+```{r warning=FALSE, messages= FALSE,fig.height=5, fig.width=10}
+
+interval_group <- factor(activity$interval)
+avesteps <- tapply(activity$steps, interval_group, mean, na.rm=TRUE)
+head(avesteps)
+plot(avesteps, type="l", xlab="5 minute interval", ylab="Average number of steps",  main="Average number of steps ( by each 5 minute interval)")
+```
+5 min interval which contains maximum number of steps is `r  names(which.max(avesteps))`
+
+###3 -> Imputing missing values
+```{r}
+sum(is.na(activity$steps))
+nas <- is.na(activity$steps)
+activity$steps[nas] <- avesteps[as.character(activity$interval[nas])]
+sum(is.na(activity$steps))
+#length(activity)
+newactivity <- activity
+newfdate <- factor(newactivity$date)
+newaverage <- tapply(newactivity$steps, newfdate, sum)
+hist(newaverage,breaks=20, main="Histogram depicting number of steps taken per day", xlab="Number of steps taken", ylab="Count of steps")
+mline <- mean(newaverage,na.rm=TRUE)
+medianline <- median(newaverage,na.rm=TRUE)
+```
+####The new Mean is `r mline` and the new Median is `r I(medianline)`
+ 
+ 
+###4 -> Differences in activity patterns between weekdays and weekends?
+```{r}
+library(dplyr)
+activity <- mutate(activity, weektype = ifelse(weekdays(activity$date) == "Saturday" | weekdays(activity$date) == "Sunday", "Weekend", "Weekday"))
+activity$weektype <- as.factor(activity$weektype)
+
+newact <- aggregate(activity$steps, list(activity$interval,activity$weektype),mean)
+colnames(newact) <- c("interval","weektype","mean")
+str(newact)
+ggplot(newact, aes(interval, mean, color=weektype)) + geom_line() +
+        xlab("5-minute interval") + ylab("Number of steps")
+
+```
+
